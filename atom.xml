@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://homchen.github.io</id>
+    <title>Homchen Blog</title>
+    <updated>2023-05-15T11:51:48.964Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://homchen.github.io"/>
+    <link rel="self" href="https://homchen.github.io/atom.xml"/>
+    <subtitle>一个新手的博客</subtitle>
+    <logo>https://homchen.github.io/images/avatar.png</logo>
+    <icon>https://homchen.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2023, Homchen Blog</rights>
+    <entry>
+        <title type="html"><![CDATA[Springboot+jwt实现简易单点登录🤣]]></title>
+        <id>https://homchen.github.io/post/springbootjwt-shi-xian-jian-yi-dan-dian-deng-lu/</id>
+        <link href="https://homchen.github.io/post/springbootjwt-shi-xian-jian-yi-dan-dian-deng-lu/">
+        </link>
+        <updated>2023-05-12T12:29:01.000Z</updated>
+    </entry>
+</feed>

@@ -1,0 +1,494 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Springboot+jwt实现简易单点登录🤣 | Homchen Blog</title>
+<link rel="shortcut icon" href="https://homchen.github.io/favicon.ico?v=1684151106024">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://homchen.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Springboot+jwt实现简易单点登录🤣 | Homchen Blog - Atom Feed" href="https://homchen.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="前言
+本文适用于入门JavaWeb尚浅，且会使用springboot框架进行单体项目开发的新手程序员~
+
+为什么要使用jwt
+什么是jwt
+🔥jwt由3部分组成，分别是Header头部、Payload数据、Signature签名。
+// ..." />
+    <meta name="keywords" content="Java,后端" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://homchen.github.io">
+  <img class="avatar" src="https://homchen.github.io/images/avatar.png?v=1684151106024" alt="">
+  </a>
+  <h1 class="site-title">
+    Homchen Blog
+  </h1>
+  <p class="site-description">
+    一个新手的博客
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="https://homchen.github.io" class="menu">
+          🏠首页
+        </a>
+      
+    
+      
+        <a href="https://homchen.github.io/archives" class="menu">
+          📖归档
+        </a>
+      
+    
+      
+        <a href="https://homchen.github.io/tags" class="menu">
+          🏷标签
+        </a>
+      
+    
+      
+        <a href="https://homchen.github.io/post/about" class="menu">
+          ⚙关于
+        </a>
+      
+    
+      
+        <a href="https://homchen.github.io/post/you-lian" class="menu">
+          🧑‍🤝‍🧑友链
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Springboot+jwt实现简易单点登录🤣
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-05-12
+              </span>
+              <span>
+                8 min read
+              </span>
+              
+                <a href="https://homchen.github.io/tag/zXwk_tOa3/" class="post-tag">
+                  # Java
+                </a>
+              
+                <a href="https://homchen.github.io/tag/qhkrBCXtj/" class="post-tag">
+                  # 后端
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h1 id="前言"><strong>前言</strong></h1>
+<p>本文适用于入门JavaWeb尚浅，且会使用springboot框架进行单体项目开发的新手程序员~</p>
+<hr>
+<h1 id="为什么要使用jwt"><strong>为什么要使用jwt</strong></h1>
+<h2 id="什么是jwt"><strong>什么是jwt</strong></h2>
+<p>🔥<strong>jwt</strong>由3部分组成，分别是<strong>Header</strong>头部、<strong>Payload</strong>数据、<strong>Signature</strong>签名。</p>
+<pre><code class="language-json">// Header
+{
+    &quot;alg&quot;: &quot;HS256&quot;,
+    &quot;typ&quot;: &quot;JWT&quot;
+}
+
+// Payload
+{
+    // reserved claims
+    &quot;uid&quot;: &quot;1234567890&quot;,
+    &quot;nickname&quot;: &quot;homchen&quot;
+    ...
+}
+</code></pre>
+<pre><code class="language-java">// Signature
+Signature = HS256(Base64(Header) + &quot;.&quot; + Base64(Payload), &quot;自定义密钥key&quot; );
+
+// JWT
+JWT = Base64(Header) + &quot;.&quot; + Base64(Payload) + &quot;.&quot; + Signature;
+</code></pre>
+<p>首先，<mark>根据指定的📝<strong>加密算法</strong>和🔑<strong>密钥</strong>对数据信息加密得到一个签名</mark>，然后将算法、数据、签名（<strong>密钥</strong>自己保管好）一起用Base64加密的到一个JWT字符串。</p>
+<p>看到这里或许有人会问：&quot;只要拿到jwt，那这样不就谁都可以看到<strong>数据</strong>了吗？&quot;<br>
+是的没错，因此我们不应该把一些敏感数据放进去，一般保存UID和用户昵称就够了。</p>
+<h2 id="怎么认证">🔐<strong>怎么认证</strong></h2>
+<p>因此根据这种设计方式，就衍生出了一种独特的验签方式：<br>
+<mark>对JWT密文进行Base64解密使用相同的<strong>算法</strong>和<strong>密钥</strong>进行再次签名</mark>，然后将两次个签名比对，判断数据是否被篡改。对比无误，就是认证成功；反则失败。</p>
+<h2 id="安全性">🔒<strong>安全性</strong></h2>
+<p>如果认证成功，那就证明这个令牌一定是我们自己签发的，而不是别人伪造的，自然能放心使用JWT中携带的身份数据。相应的我们的问题将从<mark>如何保证token的真实性</mark>变成了，<mark>如何保证token不被非法获取从而冒充别人的身份</mark>。</p>
+<p>而token不被非法获取这个问题不是我们现阶段应该考虑的问题，我们应该要去思考，假设他获取后，我们该如何避免更多的损失。这个问题的方案有很多，这里就举个简单的例子：给jwt加上一个<strong>过期时间</strong>。</p>
+<pre><code class="language-json">// Payload
+{
+    // reserved claims
+    &quot;uid&quot;: &quot;1234567890&quot;,
+    &quot;nickname&quot;: &quot;homchen&quot;，
+    &quot;timestamp&quot;:&quot;1684050452&quot;
+    ...
+}
+</code></pre>
+<p>在认证的流程上，不仅要验证jwt的真实性，还要验证jwt令牌是否过期。这样就能使得以前签发的令牌失效，避免了被长期被冒充的可能性。</p>
+<p>📯除此之外还可以自行实现令牌续签功能，这里就不展开细说了，有兴趣的小伙伴可以自己思考一下如何实现。</p>
+<h1 id="怎么使用jwt实现登录认证">怎么使用jwt实现登录认证</h1>
+<p>首先在maven导入包</p>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;com.auth0&lt;/groupId&gt;
+    &lt;artifactId&gt;java-jwt&lt;/artifactId&gt;
+    &lt;version&gt;4.3.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>创建一个类来存储当前用户信息，可以根据自己的业务需求进行修改。</p>
+<pre><code class="language-java">/**
+ * 当前用户处理类
+ */
+public class UserHandler {
+
+    private static ThreadLocal&lt;Long&gt; t = new ThreadLocal&lt;&gt;();
+
+    public static void set(Long uid) {
+        t.set(uid);
+    }
+
+    public static Long get() {
+        return t.get();
+    }
+
+    public static void remove() {
+        t.remove();
+    }
+}
+</code></pre>
+<p>写一个jwt工具类来，进行统一管理。</p>
+<pre><code class="language-java">import cn.hutool.core.util.StrUtil;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTCreator;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import org.jetbrains.annotations.NotNull;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.HashMap;
+import java.util.Map;
+
+public class JwtUtils {
+
+    /**
+     * 加密KEY
+     */
+    private static final String TOKEN_SECRET = &quot;jwt-secret&quot;;
+
+    /**
+     * 生成Token
+     *
+     * @param uid      用户id
+     * @param nickname 昵称
+     * @return token
+     */
+    public static String getToken(@NotNull Long uid, @NotNull String nickname) {
+        JWTCreator.Builder builder = JWT.create();
+        LocalDateTime now = LocalDateTime.now();
+        return builder
+                .withHeader(null) //不需要自己填写
+                .withClaim(&quot;uid&quot;, uid)
+                .withClaim(&quot;nickname&quot;, nickname)
+                .withExpiresAt(now.plusDays(1).toInstant(ZoneOffset.of(&quot;+8&quot;))) // 过期时间
+                .sign(Algorithm.HMAC256(TOKEN_SECRET)); //加密方式
+    }
+
+
+    /**
+     * 解析获取数据
+     *
+     * @param token 令牌
+     * @return 数据
+     */
+    public static Map&lt;String, Object&gt; verifyToken(@NotNull String token) {
+        DecodedJWT verify;
+        JWTVerifier verifier = JWT.require(Algorithm.HMAC256(TOKEN_SECRET)).build();
+        try {
+            verify = verifier.verify(token);
+        } catch (Exception e) {
+            throw new RuntimeException(&quot;Token认证失败&quot;);
+        }
+
+        String uid = verify.getClaim(&quot;uid&quot;).toString();
+        String nickname = verify.getClaim(&quot;nickname&quot;).toString();
+
+        if (StrUtil.isEmpty(uid) || StrUtil.isEmpty(nickname)) {
+            throw new RuntimeException(&quot;非法令牌&quot;);
+        }
+        Map&lt;String, Object&gt; param = new HashMap&lt;&gt;();
+        param.put(&quot;uid&quot;, Long.valueOf(uid));
+        param.put(&quot;nickname&quot;, nickname);
+        return param;
+    }
+}
+</code></pre>
+<p>加上过期时间后，就能在认证的同时检验是否过期了，是不是很方便呢。</p>
+<p>接下来根据自己业务流程去实现登录授权，业务鉴权。</p>
+<pre><code class="language-java">public Map&lt;String, Object&gt; login(String username, String password) {
+        
+        ... 登录业务流程
+
+        String token = JwtUtils.getToken(user.getId(), user.getNickname());
+        Map&lt;String, Object&gt; map = new HashMap&lt;&gt;();
+        map.put(&quot;user&quot;, user);
+        map.put(&quot;token&quot;, token);
+        return map;
+    }
+</code></pre>
+<p>将用户信息和token交给前端，每次业务请求前都在请求头上带上token，<br>
+例如我们约定好以 Authorization:token 的形式获取令牌，实现HandlerInterceptor接口。</p>
+<pre><code class="language-java">import cn.hutool.core.util.StrUtil;
+import com.litliquid.lionmountaindistribution.common.context.UserHandler;
+import com.litliquid.lionmountaindistribution.common.utils.JwtUtils;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
+
+@Component
+public class LoginInterceptor implements HandlerInterceptor {
+
+    public static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
+    /**
+     * 业务执行前
+     */
+    @Override
+    public boolean preHandle(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws Exception {
+
+        //获取本次请求路径
+        String requestURI = request.getRequestURI();
+
+        System.out.println(&quot;拦截到请求:&quot; + requestURI);
+
+        //定义不需要处理的路径（也可以在配置类中配置）
+        String[] urls = new String[]{
+
+                ...
+
+                &quot;/user/login&quot;,
+                &quot;/doc.html&quot;,
+                &quot;/swagger-resources&quot;,
+                &quot;/v2/api-docs&quot;,
+                &quot;/favicon.ico&quot;
+        };
+
+        //判断本次是否需要处理
+        boolean check = check(urls, requestURI);
+
+        //如果不需要处理，则直接放行
+        if (check) {
+            return true;
+        }
+
+        //1.获取token信息
+        String authorization = request.getHeader(&quot;Authorization&quot;);
+        //2.解析token 判断是否有效
+        if (StrUtil.isEmpty(authorization)) {
+            throw new RuntimeException(&quot;缺少令牌&quot;);
+        }
+        //3.解析token信息
+        Map&lt;String, Object&gt; map = JwtUtils.verifyToken(authorization);
+        Long uid = (Long) map.get(&quot;uid&quot;);
+        String nickname = (String) map.get(&quot;nickname&quot;);
+        //4.保存用户数据
+        UserHandler.set(uid);
+        //5.解析成功放行
+        return true;
+    }
+
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        //释放内存
+        UserHandler.remove();
+    }
+
+    /**
+     * 路径匹配，检查本次请求是否需要放行
+     *
+     * @param urls 请求白名单
+     * @param requestURI 请求路径
+     */
+    public boolean check(String[] urls, String requestURI) {
+        for (String url : urls) {
+            boolean match = PATH_MATCHER.match(url, requestURI);
+            if (match) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+</code></pre>
+<p>最后实现WebMvcConfigurer接口，注册拦截器。</p>
+<pre><code class="language-java">import blog.interceptor.UserLoginInterceptor;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Configuration
+public class LoginConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private LoginInterceptor loginInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loginInterceptor)
+                .addPathPatterns(&quot;/**&quot;); //拦截所以路径
+    }
+}
+</code></pre>
+<p>至此，一个简易的单点登录功能就实现完成了。</p>
+<h1 id="️总结">✔️总结</h1>
+<p>单纯使用jwt方案实现单点登录，好处就在于<mark>能携带用户数据且保证数据的可靠</mark>，但同时缺点就在于<mark>无法做到主动销毁一个已经签发的令牌</mark>。请各位小伙伴们根据自己的业务需求，合理的选择解决方案。</p>
+<hr>
+<h6 id="未经本人允许切勿转载"><strong>未经本人允许，切勿转载。</strong></h6>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E5%89%8D%E8%A8%80"><strong>前言</strong></a></li>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8jwt"><strong>为什么要使用jwt</strong></a>
+<ul>
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AFjwt"><strong>什么是jwt</strong></a></li>
+<li><a href="#%E6%80%8E%E4%B9%88%E8%AE%A4%E8%AF%81">🔐<strong>怎么认证</strong></a></li>
+<li><a href="#%E5%AE%89%E5%85%A8%E6%80%A7">🔒<strong>安全性</strong></a></li>
+</ul>
+</li>
+<li><a href="#%E6%80%8E%E4%B9%88%E4%BD%BF%E7%94%A8jwt%E5%AE%9E%E7%8E%B0%E7%99%BB%E5%BD%95%E8%AE%A4%E8%AF%81">怎么使用jwt实现登录认证</a></li>
+<li><a href="#%EF%B8%8F%E6%80%BB%E7%BB%93">✔️总结</a><br>
+*<br>
+*<br>
+*<br>
+*<br>
+* <a href="#%E6%9C%AA%E7%BB%8F%E6%9C%AC%E4%BA%BA%E5%85%81%E8%AE%B8%E5%88%87%E5%8B%BF%E8%BD%AC%E8%BD%BD"><strong>未经本人允许，切勿转载。</strong></a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '6e22f01009522181efce',
+    clientSecret: 'a020328fc365c8214e3921e783040ff318b25a16',
+    repo: 'BlogGitalk',
+    owner: 'Homchen',
+    admin: ['Homchen'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Blog for <a href="https://homchen.github.io" target="_blank">Augus Chen</a>
+  <a class="rss" href="https://homchen.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
